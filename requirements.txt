@@ -1,0 +1,27 @@
+# Dependencias del Proyecto - Detector de Spam con Naive Bayes
+# Proyecto Final de Inteligencia Artificial
+#
+# Instalación:
+#   pip install -r requirements.txt
+#
+# Versión mínima de Python: 3.7+
+
+# Visualización y gráficos
+matplotlib>=3.5.0
+seaborn>=0.12.0
+
+# Procesamiento numérico (opcional pero recomendado para mejor rendimiento)
+numpy>=1.20.0
+
+# Nota: El proyecto funciona principalmente con bibliotecas estándar de Python:
+# - csv (para leer archivos CSV)
+# - re (para expresiones regulares)
+# - math (para operaciones matemáticas)
+# - collections (Counter, defaultdict)
+# - random (para dividir datos aleatoriamente)
+# - json (para exportar reportes)
+# - os (para manejo de directorios)
+#
+# Las dependencias externas (matplotlib, seaborn, numpy) son necesarias
+# para las visualizaciones profesionales y análisis estadísticos avanzados.
+

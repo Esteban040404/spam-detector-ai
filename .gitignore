@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Resultados y gráficos generados
+resultados/
+*.png
+*.jpg
+*.pdf
+
+# Modelos entrenados
+modelos/
+*.pkl
+
+# Datasets grandes
+datos_grande.csv
+
+# Datos sensibles (si los hay)
+*.pkl
+*.model
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
