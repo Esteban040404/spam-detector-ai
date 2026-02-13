@@ -1,20 +1,3 @@
-"""
-Script Principal - Detector de Spam con Naive Bayes
-====================================================
-
-Este script ejecuta el pipeline completo del detector de spam:
-1. Carga los datos desde el archivo CSV
-2. Preprocesa los mensajes
-3. Divide los datos en entrenamiento y prueba
-4. Entrena el modelo Naive Bayes
-5. Evalúa el modelo con métricas estándar
-6. Genera visualizaciones profesionales
-7. Realiza análisis estadísticos detallados
-8. Exporta reportes completos
-
-Para ejecutar: python main.py
-"""
-
 import csv
 import random
 import os

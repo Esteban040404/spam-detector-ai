@@ -25,6 +25,8 @@ Este proyecto implementa un sistema completo de detección de spam en correos el
 - **Visualizaciones profesionales** de resultados y análisis
 - **Análisis estadístico detallado** con interpretación de resultados
 - **Reportes exportables** en formato JSON
+- **Persistencia del modelo** (guardar/cargar `.pkl`) y script de uso `usar_modelo.py`
+- **Datasets pequeño y grande** (`datos.csv`, `datos_grande.csv`) con generador automático
 
 El modelo logra un desempeño competitivo en la tarea de clasificación binaria, demostrando la efectividad del algoritmo Naive Bayes para problemas de procesamiento de lenguaje natural.
 
@@ -69,14 +71,20 @@ La tarea es una **clasificación binaria**, lo que la hace ideal para introducir
 
 ### **Descripción del Dataset**
 
-Para este estudio se emplea un dataset balanceado de 180 mensajes de correo electrónico en español, etiquetados manualmente como spam o ham (correo legítimo).
+Para este estudio se emplean **dos datasets balanceados** de mensajes en español, etiquetados como spam o ham:
 
-**Características del Dataset:**
-- **Total de mensajes:** 180
-- **Distribución:** 90 mensajes spam (50%) y 90 mensajes ham (50%)
-- **Formato:** Archivo CSV con columnas: `id`, `mensaje`, `etiqueta`
+**Datasets incluidos:**
+- **`datos.csv` (pequeño):** 180 mensajes (90 spam, 90 ham)
+- **`datos_grande.csv` (grande):** 1500 mensajes (750 spam, 750 ham)
+
+**Características generales:**
+- **Formato:** Archivos CSV con columnas: `id`, `mensaje`, `etiqueta`
 - **Idioma:** Español
-- **Balance:** Dataset balanceado para evitar sesgos en el entrenamiento
+- **Balance:** Datasets balanceados para evitar sesgos en el entrenamiento
+- **Origen:** `datos_grande.csv` se genera automáticamente a partir de plantillas
+
+**Nota:** El script `main.py` intenta usar primero `datos_grande.csv`. Si no existe, usa `datos.csv`.  
+Para regenerar el dataset grande, ejecuta `python generar_dataset_grande.py`.
 
 **Ejemplos de datos:**
 
@@ -87,7 +95,7 @@ Para este estudio se emplea un dataset balanceado de 180 mensajes de correo elec
 | 3  | "Oferta limitada, compra ahora"                | spam     |
 | 4  | "Adjunto envío los documentos solicitados"     | ham      |
 
-El dataset está diseñado para demostrar el funcionamiento del modelo de forma clara y puede ampliarse para obtener mejores resultados en producción.
+Los datasets están diseñados para demostrar el funcionamiento del modelo de forma clara y pueden ampliarse para obtener mejores resultados en producción.
 
 ---
 
@@ -157,7 +165,7 @@ Se utilizan las métricas clásicas:
 - **Recall (Sensibilidad)**  
 - **F1-score**
 
-Un ejemplo esperado con un dataset pequeño:
+Un ejemplo esperado con el dataset pequeño (`datos.csv`):
 
 | Métrica   | Valor |
 |-----------|-------|
@@ -210,13 +218,24 @@ El proyecto está organizado en módulos separados para facilitar la comprensió
 
 ```
 spam-detector-ai/
-├── README.md              # Documentación completa
-├── requirements.txt       # Dependencias del proyecto
-├── datos.csv              # Dataset con mensajes etiquetados (spam/ham)
-├── preprocesamiento.py    # Funciones de preprocesamiento de texto
-├── modelo.py              # Implementación de Naive Bayes desde cero
-├── evaluacion.py          # Métricas de evaluación
-└── main.py                # Script principal que ejecuta el pipeline completo
+├── README.md                      # Documentación completa
+├── INSTALACION.md                 # Guía de instalación
+├── GUIA_MODELO_PERSISTENTE.md     # Guía de persistencia del modelo
+├── EXPOSICION_Modelo_Spam_NaiveBayes.md
+├── requirements.txt               # Dependencias del proyecto
+├── instalar_dependencias.sh       # Script de instalación (macOS/Linux)
+├── datos.csv                      # Dataset pequeño (180 mensajes)
+├── datos_grande.csv               # Dataset grande (1500 mensajes)
+├── generar_dataset_grande.py      # Generador del dataset grande
+├── preprocesamiento.py            # Funciones de preprocesamiento de texto
+├── modelo.py                      # Implementación de Naive Bayes desde cero
+├── evaluacion.py                  # Métricas de evaluación
+├── analisis.py                    # Análisis estadístico y reporte JSON
+├── visualizaciones.py             # Generación de gráficos profesionales
+├── usar_modelo.py                 # Carga y uso del modelo guardado
+├── main.py                        # Script principal que ejecuta el pipeline completo
+├── modelos/                       # Modelos guardados (se genera)
+└── resultados/                    # Resultados y gráficos (se genera)
 ```
 
 ### **Flujo de Datos**
@@ -224,7 +243,7 @@ spam-detector-ai/
 El pipeline completo funciona de la siguiente manera:
 
 ```
-datos.csv
+datos_grande.csv (si existe) / datos.csv
     ↓
 [Carga de Datos] → mensajes, etiquetas
     ↓
@@ -236,7 +255,9 @@ datos.csv
     ↓
 [Evaluación] → métricas (accuracy, precision, recall, F1)
     ↓
-[Predicción] → clasificación de nuevos mensajes
+[Análisis + Visualizaciones + Reporte JSON]
+    ↓
+[Guardado del Modelo] → modelos/modelo_entrenado.pkl
 ```
 
 ### **Descripción de Módulos**
@@ -257,6 +278,8 @@ Implementa el clasificador Naive Bayes:
   - `predecir()`: Clasifica un mensaje como spam o ham
   - `predecir_proba()`: Retorna probabilidades para ambas clases
   - `obtener_palabras_importantes()`: Identifica palabras clave
+  - `guardar()` / `cargar()`: Persistencia del modelo en `.pkl`
+  - `continuar_entrenamiento()`: Reentrenamiento incremental
 
 #### **evaluacion.py**
 Calcula métricas de desempeño:
@@ -267,6 +290,24 @@ Calcula métricas de desempeño:
 - `calcular_f1_score()`: F1-score (balance entre precisión y recall)
 - `evaluar_modelo()`: Función que calcula todas las métricas
 
+#### **analisis.py**
+Análisis estadístico del dataset y reporte:
+- `analizar_distribucion_datos()`: Estadísticas y balance
+- `analizar_errores()`: Falsos positivos/negativos
+- `generar_reporte_completo()`: Reporte JSON consolidado
+- `imprimir_analisis_completo()`: Resumen legible en consola
+
+#### **visualizaciones.py**
+Genera gráficos en `resultados/`:
+- Métricas, matriz de confusión, distribución de clases
+- Palabras importantes y gráfico radar comparativo
+
+#### **generar_dataset_grande.py**
+Genera `datos_grande.csv` con más ejemplos balanceados.
+
+#### **usar_modelo.py**
+Carga `modelos/modelo_entrenado.pkl` y clasifica mensajes sin reentrenar.
+
 #### **main.py**
 Orquesta todo el pipeline:
 1. Carga datos desde CSV
@@ -276,6 +317,9 @@ Orquesta todo el pipeline:
 5. Evalúa con métricas
 6. Muestra ejemplos de predicción
 7. Analiza palabras importantes
+8. Realiza análisis estadístico
+9. Genera visualizaciones (si están disponibles)
+10. Exporta reporte JSON y guarda el modelo
 
 ---
 
@@ -410,7 +454,9 @@ Para ham:
 #### **Paso 1: Carga de Datos**
 
 ```python
-mensajes, etiquetas = cargar_datos('datos.csv')
+import os
+archivo = 'datos_grande.csv' if os.path.exists('datos_grande.csv') else 'datos.csv'
+mensajes, etiquetas = cargar_datos(archivo)
 ```
 
 **Qué hace:**
@@ -418,6 +464,7 @@ mensajes, etiquetas = cargar_datos('datos.csv')
 - Extrae los campos `mensaje` y `etiqueta`
 - Valida que las etiquetas sean 'spam' o 'ham'
 - Retorna dos listas: una con mensajes y otra con etiquetas
+ - Usa `datos_grande.csv` si existe, si no usa `datos.csv`
 
 **Ejemplo de datos cargados:**
 - mensajes = ["Gana dinero rápido", "Reunión confirmada", ...]
@@ -544,6 +591,23 @@ resultados = evaluar_modelo(modelo, X_test, y_test)
    - Recall = TP / (TP + FN)
    - F1 = 2 × (Precision × Recall) / (Precision + Recall)
 
+#### **Paso 7: Análisis y palabras importantes**
+
+Se identifican palabras más características por clase y se generan estadísticas del dataset:
+- Distribución y balance de clases
+- Longitud promedio de mensajes
+- Errores más comunes (FP/FN)
+
+#### **Paso 8: Visualizaciones (opcional)**
+
+Si están instaladas las dependencias, se generan gráficos en `resultados/`:
+- Métricas, matriz de confusión, distribución de clases
+- Palabras importantes y radar comparativo
+
+#### **Paso 9: Reporte JSON y persistencia**
+
+Se exporta un reporte completo en `resultados/reporte_completo.json` y se guarda el modelo en `modelos/modelo_entrenado.pkl`.
+
 ### **Explicación de Funciones Clave**
 
 #### **Función `_calcular_log_probabilidad()` en modelo.py**
@@ -601,7 +665,7 @@ def crear_bag_of_words(mensajes):
 
 - **Python 3.7 o superior**
 - **Sistema operativo**: Windows, macOS o Linux
-- **Bibliotecas**: Solo bibliotecas estándar de Python (no requiere instalaciones adicionales)
+- **Bibliotecas**: El pipeline base funciona con bibliotecas estándar de Python. Para **visualizaciones** y análisis avanzados se recomienda instalar `matplotlib`, `seaborn`, `numpy`.
 
 ### **Instalación**
 
@@ -653,6 +717,15 @@ Esto ejecutará:
 4. Evaluación
 5. Ejemplos de predicción
 6. Análisis de palabras importantes
+7. Análisis estadístico
+8. Visualizaciones (si están disponibles)
+9. Reporte JSON y guardado del modelo
+
+**Nota:** El script usa `datos_grande.csv` si existe; de lo contrario usa `datos.csv`.
+Para generar el dataset grande ejecuta:
+```bash
+python generar_dataset_grande.py
+```
 
 #### **Salida Esperada**
 
@@ -662,18 +735,20 @@ El programa mostrará:
 - Matriz de confusión
 - Ejemplos de predicciones
 - Palabras más características de spam y ham
+- Análisis estadístico y recomendaciones
+- Reporte JSON en `resultados/reporte_completo.json`
+- Imágenes en `resultados/` (si están disponibles las dependencias)
 
 ### **Usar el Modelo para Clasificar Mensajes Propios**
 
-Puedes crear un script simple para usar el modelo entrenado:
+Puedes cargar el modelo entrenado sin reentrenar:
 
 ```python
 from preprocesamiento import preprocesar_mensaje
 from modelo import NaiveBayesSpamDetector
-import pickle  # Para guardar/cargar el modelo
 
-# 1. Entrenar el modelo (si no lo has hecho)
-# ... (usar código de main.py)
+# 1. Cargar el modelo guardado
+modelo = NaiveBayesSpamDetector.cargar('modelos/modelo_entrenado.pkl')
 
 # 2. Clasificar un nuevo mensaje
 mensaje_nuevo = "Gana dinero rápido sin esfuerzo"
@@ -685,11 +760,18 @@ print(f"Predicción: {prediccion}")
 print(f"Probabilidades: Spam={probabilidades['spam']:.3f}, Ham={probabilidades['ham']:.3f}")
 ```
 
+Primero ejecuta `python main.py` para generar el archivo `modelos/modelo_entrenado.pkl`.
+
+También puedes usar el script interactivo:
+```bash
+python usar_modelo.py
+```
+
 ### **Agregar Nuevos Datos**
 
 Para agregar más ejemplos al dataset:
 
-1. Abre `datos.csv`
+1. Abre `datos.csv` o `datos_grande.csv`
 2. Agrega nuevas filas con el formato:
    ```csv
    id,mensaje,etiqueta
@@ -722,10 +804,14 @@ Valores más altos de alpha dan más peso a palabras desconocidas.
 ### **Troubleshooting**
 
 **Error: "FileNotFoundError: datos.csv"**
-- Asegúrate de que el archivo `datos.csv` esté en el mismo directorio que `main.py`
+- Asegúrate de que `datos.csv` o `datos_grande.csv` estén en el mismo directorio que `main.py`
+- Si falta el dataset grande, puedes generarlo con `python generar_dataset_grande.py`
 
 **Error: "El modelo debe ser entrenado antes de hacer predicciones"**
 - Ejecuta `modelo.entrenar()` antes de usar `modelo.predecir()`
+
+**Advertencia: "Visualizaciones no disponibles"**
+- Instala las dependencias con `pip install -r requirements.txt`
 
 **Resultados muy bajos (accuracy < 0.7)**
 - Revisa que el dataset esté balanceado (similar cantidad de spam y ham)
@@ -871,7 +957,7 @@ Al ejecutar el proyecto, se generan los siguientes resultados:
 
 ### **Métricas de Desempeño**
 
-Con el dataset proporcionado (180 mensajes balanceados), se esperan resultados como:
+Con el dataset pequeño (`datos.csv`, 180 mensajes balanceados), se esperan resultados como:
 
 | Métrica | Valor Esperado | Interpretación |
 |---------|----------------|----------------|
@@ -890,6 +976,7 @@ El script principal genera automáticamente:
    - `distribucion_clases.png` - Comparación de distribución de clases
    - `palabras_importantes.png` - Palabras clave por clase
    - `comparacion_metricas_radar.png` - Gráfico de radar comparativo
+   - (Si no están instaladas las dependencias, estas visualizaciones se omiten)
 
 2. **Reportes**:
    - `reporte_completo.json` - Reporte detallado en formato JSON con todos los análisis
@@ -910,17 +997,23 @@ El sistema genera automáticamente:
 spam-detector-ai/
 ├── README.md                  # Documentación completa del proyecto
 ├── LICENSE                    # Licencia MIT
+├── INSTALACION.md             # Guía de instalación
+├── GUIA_MODELO_PERSISTENTE.md # Guía de persistencia del modelo
 ├── requirements.txt           # Dependencias del proyecto
 ├── .gitignore                 # Archivos a ignorar en Git
-├── datos.csv                  # Dataset con 180 mensajes etiquetados
+├── datos.csv                  # Dataset pequeño con 180 mensajes
+├── datos_grande.csv           # Dataset grande con 1500 mensajes
+├── generar_dataset_grande.py  # Generador del dataset grande
 │
 ├── preprocesamiento.py        # Módulo de preprocesamiento de texto
 ├── modelo.py                  # Implementación de Naive Bayes
 ├── evaluacion.py              # Métricas de evaluación
 ├── visualizaciones.py         # Generación de gráficos profesionales
 ├── analisis.py                # Análisis estadístico detallado
+├── usar_modelo.py             # Uso del modelo guardado
 ├── main.py                    # Script principal del pipeline
 │
+├── modelos/                   # Modelos guardados (se genera)
 └── resultados/                # Directorio generado automáticamente
     ├── metricas_desempeno.png
     ├── matriz_confusion.png
@@ -1052,4 +1145,3 @@ Este proyecto fue desarrollado como trabajo final del curso de Inteligencia Arti
 **Nota Final**: Este proyecto demuestra la implementación completa de un sistema de clasificación de texto desde cero, incluyendo preprocesamiento, modelado, evaluación y análisis. El código está diseñado para ser educativo, bien documentado y fácil de entender, ideal para propósitos académicos y de aprendizaje.
 
 ---
-
